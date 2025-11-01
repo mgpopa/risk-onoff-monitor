@@ -1,0 +1,51 @@
+universe:
+  - name: SPY # US equities
+    provider_symbol: SPY
+    orientation: 1
+    weight: 0.20
+    class: equity_us
+  - name: QQQ # US tech
+    provider_symbol: QQQ
+    orientation: 1
+    weight: 0.15
+    class: equity_us
+  - name: VGK # Europe equities
+    provider_symbol: VGK
+    orientation: 1
+    weight: 0.15
+    class: equity_eu
+  - name: EWG # Germany equities
+    provider_symbol: EWG
+    orientation: 1
+    weight: 0.10
+    class: equity_eu
+  - name: TLT # US long Treasuries (defensive)
+    provider_symbol: TLT
+    orientation: -1
+    weight: 0.20
+    class: bonds
+  - name: GLD # Gold (defensive)
+    provider_symbol: GLD
+    orientation: -1
+    weight: 0.10
+    class: gold
+  - name: EURUSD # USD weakness tends to be risk-on
+    provider_symbol: EUR/USD
+    orientation: 1
+    weight: 0.07
+    class: fx
+  - name: USDCHF # CHF safe-haven dynamics
+    provider_symbol: USD/CHF
+    orientation: 1
+    weight: 0.03
+    class: fx
+
+provider:
+  name: twelvedata
+  interval: "1min"
+  mode: "quote"
+score:
+  z_window: 60
+  vol_window: 15
+  hi_threshold: 0.5
+  lo_threshold: -0.5
