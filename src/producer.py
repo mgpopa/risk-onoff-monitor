@@ -46,13 +46,31 @@ def demo_quote(last: float) -> float:
 def main():
     cfg = load_universe()
     uni = cfg["universe"]
-    producer = KafkaProducer(
-        bootstrap_servers=KAFKA_BOOTSTRAP,
-        value_serializer=lambda v: json.dumps(v).encode("utf-8"),
-        key_serializer=lambda v: v.encode("utf-8"),
-        linger_ms=10, retries=3, acks="all",
-    )
     state_last_price: Dict[str, float] = {}
+    
+    # Retry Kafka connection a few times
+    producer = None
+    retries = 5
+    while retries > 0:
+        try:
+            producer = KafkaProducer(
+                bootstrap_servers=KAFKA_BOOTSTRAP,
+                value_serializer=lambda v: json.dumps(v).encode("utf-8"),
+                key_serializer=lambda v: v.encode("utf-8"),
+                linger_ms=10, retries=3, acks="all",
+            )
+            print("[producer] Successfully connected to Kafka")
+            break
+        except Exception as e:
+            retries -= 1
+            if retries > 0:
+                print(f"[producer] Failed to connect to Kafka, retrying in 5s: {e}")
+                time.sleep(5)
+            elif PRODUCER_MODE != "demo":
+                raise
+            else:
+                print(f"[producer] WARNING: Could not connect to Kafka, running in demo print mode: {e}")
+                producer = None
     print(f"[producer] mode={PRODUCER_MODE} bootstrap={KAFKA_BOOTSTRAP} topic={KAFKA_TOPIC_QUOTES}")
     while True:
         now = datetime.utcnow().replace(tzinfo=timezone.utc)
@@ -78,15 +96,21 @@ def main():
                     continue
             batch.append(payload)
 
-        for rec in batch:
-            try:
-                producer.send(KAFKA_TOPIC_QUOTES, key=rec["symbol"], value=rec)
-            except Exception as e:
-                print(f"[producer] send error: {e} -> {rec}")
-        producer.flush()
-        print(f"[producer] published {len(batch)} @ {m_ts.isoformat()}")
-        elapsed = (datetime.utcnow().replace(tzinfo=timezone.utc) - m_ts).total_seconds()
-        time.sleep(max(1.0, 60.0 - elapsed + 0.2))
+        if producer:
+            for rec in batch:
+                try:
+                    producer.send(KAFKA_TOPIC_QUOTES, key=rec["symbol"], value=rec)
+                except Exception as e:
+                    print(f"[producer] send error: {e} -> {rec}")
+            producer.flush()
+            print(f"[producer] published {len(batch)} @ {m_ts.isoformat()}")
+        else:
+            print(f"[producer] simulated {len(batch)} quotes @ {m_ts.isoformat()}")
+            for rec in batch:
+                print(f"[producer] {rec['symbol']}: {rec['price']:.2f}")
+
+        elapsed = (datetime.utcnow().replace(tzinfo=timezone.utc) - m_ts).total_seconds()
+        time.sleep(max(1.0, 60.0 - elapsed + 0.2))
 
 if __name__ == "__main__":
     main()

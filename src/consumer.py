@@ -4,7 +4,7 @@ from pathlib import Path
 import yaml, pandas as pd
 from dotenv import load_dotenv
 from kafka import KafkaConsumer
-from src.duckdb_utils import insert_quotes, compute_features, compute_regime
+from duckdb_utils import insert_quotes, compute_features, compute_regime
 
 load_dotenv()
 KAFKA_BOOTSTRAP = os.environ.get("KAFKA_BOOTSTRAP", "localhost:9092")
